@@ -102,7 +102,7 @@ const Auth = {
 // ============================================
 // API (fetch para Flask backend)
 // ============================================
-const API_BASE = 'geniushortifruit-production.up.railway.app';
+const API_BASE = 'https://geniushortifruit-production.up.railway.app';
 
 const Api = {
   async get(rota) {
