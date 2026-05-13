@@ -1,5 +1,8 @@
 [phases.setup]
-nixPkgs = ["python311"]
+nixPkgs = ["python311", "pip"]
+
+[phases.install]
+cmds = ["pip install flask flask-cors"]
 
 [start]
-cmd = "pip install -r backend/requirements.txt && python3 backend/app.py"
+cmd = "python3 backend/app.py"
