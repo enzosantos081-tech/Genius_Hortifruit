@@ -1,40 +1,39 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import requests as req
 import json
-import os
 from datetime import datetime
 
 app = Flask(__name__)
 CORS(app, origins=["https://enzosantos081-tech.github.io"])
 
 # ============================================================
-# Caminhos dos arquivos JSON
+# JSONBin config
 # ============================================================
-BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-DADOS_DIR  = os.path.join(BASE_DIR, 'dados')
-
-ARQ_USUARIOS = os.path.join(DADOS_DIR, 'usuarios.json')
-ARQ_PRODUTOS = os.path.join(DADOS_DIR, 'produtos.json')
-ARQ_PEDIDOS  = os.path.join(DADOS_DIR, 'pedidos.json')
-
-os.makedirs(DADOS_DIR, exist_ok=True)
-
+JSONBIN_KEY = "$2a$10$ab5TxFK6beoll9h9enhNEOJlyB8BW0xZJtUe4b/DWTSQeWXA6mBx2"
+BINS = {
+    "usuarios": "69dbd004aaba882197ef9608",
+    "produtos":  "69dbd06baaba882197ef9798",
+    "pedidos":   "69dbd080aaba882197ef97d4"
+}
+HEADERS = {
+    "Content-Type": "application/json",
+    "X-Access-Key": JSONBIN_KEY
+}
 
 # ============================================================
-# Helpers: ler / salvar JSON  
+# Helpers: ler / salvar no JSONBin
 # ============================================================
-def ler(arquivo):
-    if not os.path.exists(arquivo):
-        return []
-    with open(arquivo, 'r', encoding='utf-8') as f:
-        try:
-            return json.load(f)
-        except (json.JSONDecodeError, ValueError):
-            return []
+def ler(bin_name):
+    bin_id = BINS[bin_name]
+    res = req.get(f"https://api.jsonbin.io/v3/b/{bin_id}/latest", headers=HEADERS)
+    if res.status_code == 200:
+        return res.json().get("record", [])
+    return []
 
-def salvar(arquivo, dados):
-    with open(arquivo, 'w', encoding='utf-8') as f:
-        json.dump(dados, f, indent=4, ensure_ascii=False)
+def salvar(bin_name, dados):
+    bin_id = BINS[bin_name]
+    req.put(f"https://api.jsonbin.io/v3/b/{bin_id}", headers=HEADERS, json=dados)
 
 def proximo_id(lista):
     if not lista:
@@ -43,13 +42,12 @@ def proximo_id(lista):
 
 
 # ============================================================
-# Seed: popula com dados de exemplo se os arquivos estiverem
-#       vazios (roda apenas uma vez)
+# Seed: popula com dados de exemplo se os bins estiverem vazios
 # ============================================================
 def seed():
     # --- Usuários ---
-    if not ler(ARQ_USUARIOS):
-        salvar(ARQ_USUARIOS, [
+    if not ler("usuarios"):
+        salvar("usuarios", [
             {
                 "id": 1, "nome": "João Silva",
                 "email": "joao@email.com", "senha": "senha123",
@@ -73,11 +71,11 @@ def seed():
                 "status": "ativo", "admin": True
             }
         ])
-        print("✅ Usuários criados")
+        print("✅ Usuários criados no JSONBin")
 
     # --- Produtos ---
-    if not ler(ARQ_PRODUTOS):
-        salvar(ARQ_PRODUTOS, [
+    if not ler("produtos"):
+        salvar("produtos", [
             {"id":1,"nome":"Frango Grelhado","marca":"Saudável+","preco":25.90,"categoria":"Proteínas",
              "imagem":"https://images.unsplash.com/photo-1598103442097-8b74394b95c3?w=400&q=80",
              "estoque":50,"calorias":165,"proteina":31,"carboidratos":0,"gordura":3.6,"saudavel":True,"ativo":True},
@@ -115,12 +113,12 @@ def seed():
              "imagem":"https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&q=80",
              "estoque":20,"calorias":120,"proteina":25,"carboidratos":3,"gordura":2,"saudavel":False,"ativo":True},
         ])
-        print("✅ Produtos criados")
+        print("✅ Produtos criados no JSONBin")
 
     # --- Pedidos ---
-    if not ler(ARQ_PEDIDOS):
-        salvar(ARQ_PEDIDOS, [])
-        print("✅ Arquivo de pedidos criado")
+    if not ler("pedidos"):
+        salvar("pedidos", [])
+        print("✅ Bin de pedidos criado")
 
 
 # ============================================================
@@ -133,7 +131,7 @@ def login():
     email = (dados.get('email') or '').strip().lower()
     senha = dados.get('senha') or ''
 
-    usuarios = ler(ARQ_USUARIOS)
+    usuarios = ler("usuarios")
     usuario = next((u for u in usuarios
                     if u['email'].lower() == email and u['senha'] == senha), None)
 
@@ -159,7 +157,7 @@ def cadastrar():
     if len(dados['senha']) < 6:
         return jsonify({'erro': 'Senha deve ter pelo menos 6 caracteres'}), 400
 
-    usuarios = ler(ARQ_USUARIOS)
+    usuarios = ler("usuarios")
 
     if any(u['email'].lower() == dados['email'].lower() for u in usuarios):
         return jsonify({'erro': 'E-mail já cadastrado'}), 409
@@ -186,11 +184,11 @@ def cadastrar():
     }
 
     usuarios.append(novo)
-    salvar(ARQ_USUARIOS, usuarios)
+    salvar("usuarios", usuarios)
 
     sem_senha = {k: v for k, v in novo.items() if k != 'senha'}
     return jsonify(sem_senha), 201
- 
+
 
 # ============================================================
 # Rotas – Produtos (público)
@@ -198,14 +196,14 @@ def cadastrar():
 
 @app.route('/produtos', methods=['GET'])
 def listar_produtos():
-    produtos = ler(ARQ_PRODUTOS)
+    produtos = ler("produtos")
     ativos = [p for p in produtos if p.get('ativo', True)]
     return jsonify(ativos), 200
 
 
 @app.route('/produtos/<int:pid>', methods=['GET'])
 def detalhe_produto(pid):
-    produtos = ler(ARQ_PRODUTOS)
+    produtos = ler("produtos")
     p = next((x for x in produtos if x['id'] == pid), None)
     if not p:
         return jsonify({'erro': 'Produto não encontrado'}), 404
@@ -223,7 +221,7 @@ def criar_pedido():
     if not dados.get('usuario_id') or not dados.get('itens'):
         return jsonify({'erro': 'Dados incompletos'}), 400
 
-    pedidos = ler(ARQ_PEDIDOS)
+    pedidos = ler("pedidos")
 
     novo = {
         'id':                proximo_id(pedidos),
@@ -242,13 +240,13 @@ def criar_pedido():
     }
 
     pedidos.append(novo)
-    salvar(ARQ_PEDIDOS, pedidos)
+    salvar("pedidos", pedidos)
     return jsonify(novo), 201
 
 
 @app.route('/pedidos/<int:uid>', methods=['GET'])
 def pedidos_usuario(uid):
-    todos = ler(ARQ_PEDIDOS)
+    todos = ler("pedidos")
     meus  = [p for p in todos if p['usuario_id'] == uid]
     meus.sort(key=lambda x: x['id'], reverse=True)
     return jsonify(meus), 200
@@ -261,7 +259,7 @@ def pedidos_usuario(uid):
 @app.route('/usuario/<int:uid>/metas', methods=['PUT'])
 def atualizar_metas(uid):
     dados    = request.get_json()
-    usuarios = ler(ARQ_USUARIOS)
+    usuarios = ler("usuarios")
     usuario  = next((u for u in usuarios if u['id'] == uid), None)
 
     if not usuario:
@@ -271,14 +269,18 @@ def atualizar_metas(uid):
         if campo in dados:
             usuario[campo] = int(dados[campo])
 
-    salvar(ARQ_USUARIOS, usuarios)
+    salvar("usuarios", usuarios)
     sem_senha = {k: v for k, v in usuario.items() if k != 'senha'}
     return jsonify(sem_senha), 200
 
 
+# ============================================================
+# Rotas – Admin / Pedidos
+# ============================================================
+
 @app.route('/admin/pedidos', methods=['GET'])
 def admin_pedidos():
-    todos = ler(ARQ_PEDIDOS)
+    todos = ler("pedidos")
     todos.sort(key=lambda x: x['id'], reverse=True)
     return jsonify(todos), 200
 
@@ -289,13 +291,13 @@ def admin_pedidos():
 
 @app.route('/admin/produtos', methods=['GET'])
 def admin_produtos():
-    return jsonify(ler(ARQ_PRODUTOS)), 200
+    return jsonify(ler("produtos")), 200
 
 
 @app.route('/admin/produtos', methods=['POST'])
 def admin_criar_produto():
     dados    = request.get_json()
-    produtos = ler(ARQ_PRODUTOS)
+    produtos = ler("produtos")
 
     if not dados.get('nome') or dados.get('preco') is None:
         return jsonify({'erro': 'Nome e preço são obrigatórios'}), 400
@@ -317,14 +319,14 @@ def admin_criar_produto():
     }
 
     produtos.append(novo)
-    salvar(ARQ_PRODUTOS, produtos)
+    salvar("produtos", produtos)
     return jsonify(novo), 201
 
 
 @app.route('/admin/produtos/<int:pid>', methods=['PUT'])
 def admin_editar_produto(pid):
     dados    = request.get_json()
-    produtos = ler(ARQ_PRODUTOS)
+    produtos = ler("produtos")
     produto  = next((p for p in produtos if p['id'] == pid), None)
 
     if not produto:
@@ -336,19 +338,19 @@ def admin_editar_produto(pid):
         if c in dados:
             produto[c] = dados[c]
 
-    salvar(ARQ_PRODUTOS, produtos)
+    salvar("produtos", produtos)
     return jsonify(produto), 200
 
 
 @app.route('/admin/produtos/<int:pid>', methods=['DELETE'])
 def admin_deletar_produto(pid):
-    produtos = ler(ARQ_PRODUTOS)
+    produtos = ler("produtos")
     novos    = [p for p in produtos if p['id'] != pid]
 
     if len(novos) == len(produtos):
         return jsonify({'erro': 'Produto não encontrado'}), 404
 
-    salvar(ARQ_PRODUTOS, novos)
+    salvar("produtos", novos)
     return jsonify({'ok': True}), 200
 
 
@@ -358,7 +360,7 @@ def admin_deletar_produto(pid):
 
 @app.route('/admin/usuarios', methods=['GET'])
 def admin_usuarios():
-    usuarios = ler(ARQ_USUARIOS)
+    usuarios = ler("usuarios")
     sem_senha = [{k: v for k, v in u.items() if k != 'senha'} for u in usuarios]
     return jsonify(sem_senha), 200
 
@@ -366,7 +368,7 @@ def admin_usuarios():
 @app.route('/admin/usuarios/<int:uid>', methods=['PUT'])
 def admin_editar_usuario(uid):
     dados    = request.get_json()
-    usuarios = ler(ARQ_USUARIOS)
+    usuarios = ler("usuarios")
     usuario  = next((u for u in usuarios if u['id'] == uid), None)
 
     if not usuario:
@@ -377,7 +379,7 @@ def admin_editar_usuario(uid):
     if 'admin' in dados:
         usuario['admin'] = dados['admin']
 
-    salvar(ARQ_USUARIOS, usuarios)
+    salvar("usuarios", usuarios)
     sem_senha = {k: v for k, v in usuario.items() if k != 'senha'}
     return jsonify(sem_senha), 200
 
