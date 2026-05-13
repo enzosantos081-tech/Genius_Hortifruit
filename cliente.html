@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="img/logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minha Área – GENIUS Hortifruit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<div id="toast-container"></div>
+
+<main class="secao">
+  <div class="container">
+
+    <!-- Cabeçalho usuário -->
+    <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:2rem; flex-wrap:wrap;">
+      <div style="width:64px; height:64px; background:linear-gradient(135deg, var(--verde), var(--azul)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.75rem; color:white; font-weight:900;" id="avatar-usuario">J</div>
+      <div>
+        <h1 style="font-size:1.5rem; font-weight:800;" id="boas-vindas">Olá, Usuário!</h1>
+        <p style="color:var(--cinza-600); font-size:0.875rem;" id="email-usuario"></p>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn ativo" onclick="setTab('pedidos')">📦 Meus Pedidos</button>
+      <button class="tab-btn" onclick="setTab('estatisticas')">📊 Estatísticas</button>
+      <button class="tab-btn" onclick="setTab('metas')">🎯 Metas Nutricionais</button>
+    </div>
+
+    <!-- TAB: Pedidos -->
+    <div class="tab-content ativo" id="tab-pedidos">
+      <div id="lista-pedidos"></div>
+    </div>
+
+    <!-- TAB: Estatísticas -->
+    <div class="tab-content" id="tab-estatisticas">
+      <h3 style="font-weight:800; margin-bottom:1.25rem;">📊 Estatísticas do Mês</h3>
+      <div class="stats-grid" id="stats-grid"></div>
+
+      <h4 style="font-weight:700; margin-bottom:1rem; margin-top:1.5rem;">Consumo Médio vs. Metas</h4>
+      <div class="card">
+        <div class="card-body" id="stats-barras"></div>
+      </div>
+    </div>
+
+    <!-- TAB: Metas -->
+    <div class="tab-content" id="tab-metas">
+      <div style="max-width:560px;">
+        <h3 style="font-weight:800; margin-bottom:0.5rem;">🎯 Minhas Metas Nutricionais Diárias</h3>
+        <p style="color:var(--cinza-600); font-size:0.875rem; margin-bottom:1.5rem;">Configure suas metas para receber alertas personalizados no carrinho.</p>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="meta-cal">🔥 Calorias (kcal/dia)</label>
+                <input type="number" id="meta-cal" placeholder="2000" />
+              </div>
+              <div class="form-group">
+                <label for="meta-prot">💪 Proteínas (g/dia)</label>
+                <input type="number" id="meta-prot" placeholder="150" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="meta-carb">🍞 Carboidratos (g/dia)</label>
+                <input type="number" id="meta-carb" placeholder="250" />
+              </div>
+              <div class="form-group">
+                <label for="meta-gord">🥑 Gorduras (g/dia)</label>
+                <input type="number" id="meta-gord" placeholder="70" />
+              </div>
+            </div>
+
+            <div id="msg-metas" class="alerta alerta-verde" style="display:none;">✅ Metas salvas com sucesso!</div>
+
+            <button class="btn btn-verde" id="btn-salvar-metas">💾 Salvar Metas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom"><p>© 2026 GENIUS Hortifruit.</p></div>
+  </div>
+</footer>
+
+<script src="js/header.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderHeader('cliente');
+
+  const usuario = Auth.get();
+  if (!usuario) { window.location.href = 'login.html'; }
+
+  // Preenche header do usuário
+  document.getElementById('boas-vindas').textContent = `Olá, ${usuario.nome}! 👋`;
+  document.getElementById('email-usuario').textContent = usuario.email;
+  document.getElementById('avatar-usuario').textContent = usuario.nome.charAt(0).toUpperCase();
+
+  // Tabs
+  let tabAtual = 'pedidos';
+  function setTab(tab) {
+    tabAtual = tab;
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+      const tabs = ['pedidos','estatisticas','metas'];
+      btn.classList.toggle('ativo', tabs[i] === tab);
+    });
+    document.querySelectorAll('.tab-content').forEach((el, i) => {
+      const tabs = ['tab-pedidos','tab-estatisticas','tab-metas'];
+      el.classList.toggle('ativo', el.id === 'tab-' + tab);
+    });
+
+    if (tab === 'pedidos') renderPedidos();
+    if (tab === 'estatisticas') renderEstatisticas();
+    if (tab === 'metas') renderMetas();
+  }
+
+  // ===== PEDIDOS =====
+  // Cache de pedidos carregados da API
+  let pedidosCache = null;
+
+  async function getPedidos() {
+    if (pedidosCache !== null) return pedidosCache;
+    try {
+      pedidosCache = await Api.get(`/pedidos/${usuario.id}`);
+    } catch (e) {
+      pedidosCache = [];
+    }
+    return pedidosCache;
+  }
+
+  async function renderPedidos() {
+    const lista = document.getElementById('lista-pedidos');
+    lista.innerHTML = '<p style="color:var(--cinza-500);">⏳ Carregando pedidos...</p>';
+
+    const meus = await getPedidos();
+
+    if (meus.length === 0) {
+      lista.innerHTML = `
+        <div class="estado-vazio">
+          <div class="emoji">📦</div>
+          <h3>Nenhum pedido ainda</h3>
+          <p>Faça seu primeiro pedido e ele aparecerá aqui</p>
+          <a href="loja.html" class="btn btn-verde">Ir para a Loja</a>
+        </div>
+      `;
+      return;
+    }
+
+    lista.innerHTML = meus.map(p => {
+      const cor = p.status === 'confirmado' ? 'badge-verde' : 'badge-amarelo';
+      const entregaTxt = p.entrega === 'domicilio' ? '🏠 Entrega em casa' : '🏪 Retirada na loja';
+      const pagTxt = { credito: '💳 Crédito', debito: '🏦 Débito', pix: '📱 PIX' }[p.pagamento] || p.pagamento;
+      return `
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-body">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+              <div>
+                <h4 style="font-weight:800;">Pedido #${String(p.id).slice(-6)}</h4>
+                <p style="font-size:0.8rem; color:var(--cinza-500);">${p.data} · ${entregaTxt} · ${pagTxt}</p>
+              </div>
+              <span class="badge ${cor}">${p.status === 'confirmado' ? '✅ Confirmado' : '⏳ Pendente'}</span>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+              ${p.itens.map(i => `
+                <span style="background:var(--cinza-100); padding:0.3rem 0.75rem; border-radius:20px; font-size:0.8rem; font-weight:600;">
+                  ${i.nome} ×${i.quantidade}
+                </span>
+              `).join('')}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+              <div style="font-size:0.8rem; color:var(--cinza-600);">
+                🔥 ${Math.round(p.total_calorias || 0)} kcal &nbsp;
+                💪 ${Math.round(p.total_proteina || 0)}g prot &nbsp;
+                🍞 ${Math.round(p.total_carboidratos || 0)}g carbs
+              </div>
+              <span style="font-weight:800; color:var(--verde); font-size:1.1rem; font-family:'Nunito',sans-serif;">${formatarMoeda(p.total_preco)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== ESTATÍSTICAS =====
+  async function renderEstatisticas() {
+    const meus = await getPedidos();
+
+    const mesAtual = new Date().toISOString().slice(0,7);
+    const doMes = meus.filter(p => p.data && p.data.startsWith(mesAtual));
+
+    const totalCal  = doMes.reduce((s, p) => s + (p.total_calorias || 0), 0);
+    const totalProt = doMes.reduce((s, p) => s + (p.total_proteina || 0), 0);
+    const totalCarb = doMes.reduce((s, p) => s + (p.total_carboidratos || 0), 0);
+    const totalGord = doMes.reduce((s, p) => s + (p.total_gordura || 0), 0);
+    const totalGasto = doMes.reduce((s, p) => s + (p.total_preco || 0), 0);
+
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--verde-claro);">📦</div>
+        <div class="stat-valor">${doMes.length}</div>
+        <div class="stat-label">Pedidos no mês</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef9c3;">🔥</div>
+        <div class="stat-valor">${Math.round(totalCal).toLocaleString('pt-BR')}</div>
+        <div class="stat-label">Calorias no mês</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--verde-claro);">💪</div>
+        <div class="stat-valor">${Math.round(totalProt)}g</div>
+        <div class="stat-label">Proteínas no mês</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--azul-claro);">💰</div>
+        <div class="stat-valor">${formatarMoeda(totalGasto)}</div>
+        <div class="stat-label">Gasto total no mês</div>
+      </div>
+    `;
+
+    // Barras médias diárias
+    const diasMes = new Date().getDate();
+    const metas = { calorias: usuario.meta_calorias||2000, proteina: usuario.meta_proteina||150, carboidratos: usuario.meta_carboidratos||250, gordura: usuario.meta_gordura||70 };
+    const medCal = doMes.length ? totalCal / diasMes : 0;
+    const medProt = doMes.length ? totalProt / diasMes : 0;
+    const medCarb = doMes.length ? totalCarb / diasMes : 0;
+    const medGord = doMes.length ? totalGord / diasMes : 0;
+
+    function barra(nome, val, meta, cor) {
+      const pct = Math.min(Math.round(val / meta * 100), 100);
+      return `
+        <div class="barra-progress-wrap">
+          <div class="barra-label">
+            <span>${nome}</span>
+            <span>${Math.round(val)} / ${meta} (${pct}%)</span>
+          </div>
+          <div class="barra-track"><div class="barra-fill ${cor}" style="width:${pct}%;"></div></div>
+        </div>
+      `;
+    }
+
+    document.getElementById('stats-barras').innerHTML = `
+      <p style="font-size:0.8rem; color:var(--cinza-500); margin-bottom:1rem;">Médias diárias no mês atual (${doMes.length} pedidos em ${diasMes} dias)</p>
+      ${barra('🔥 Calorias (kcal/dia)', medCal, metas.calorias, 'barra-verde')}
+      ${barra('💪 Proteínas (g/dia)', medProt, metas.proteina, 'barra-azul')}
+      ${barra('🍞 Carboidratos (g/dia)', medCarb, metas.carboidratos, 'barra-amarelo')}
+      ${barra('🥑 Gorduras (g/dia)', medGord, metas.gordura, 'barra-vermelho')}
+    `;
+  }
+
+  // ===== METAS =====
+  function renderMetas() {
+    document.getElementById('meta-cal').value = usuario.meta_calorias || 2000;
+    document.getElementById('meta-prot').value = usuario.meta_proteina || 150;
+    document.getElementById('meta-carb').value = usuario.meta_carboidratos || 250;
+    document.getElementById('meta-gord').value = usuario.meta_gordura || 70;
+  }
+
+  document.getElementById('btn-salvar-metas').addEventListener('click', async () => {
+    const cal  = Number(document.getElementById('meta-cal').value);
+    const prot = Number(document.getElementById('meta-prot').value);
+    const carb = Number(document.getElementById('meta-carb').value);
+    const gord = Number(document.getElementById('meta-gord').value);
+
+    if (!cal || !prot || !carb || !gord) {
+      mostrarToast('❌ Preencha todos os campos', 'vermelho');
+      return;
+    }
+
+    try {
+      const atualizado = await Api.put(`/usuario/${usuario.id}/metas`, {
+        meta_calorias: cal, meta_proteina: prot,
+        meta_carboidratos: carb, meta_gordura: gord
+      });
+      // Atualiza o objeto local e o localStorage
+      Object.assign(usuario, atualizado);
+      Auth.salvar(usuario);
+    } catch (e) {
+      // Mesmo com erro no servidor, salva localmente
+      usuario.meta_calorias = cal;
+      usuario.meta_proteina = prot;
+      usuario.meta_carboidratos = carb;
+      usuario.meta_gordura = gord;
+      Auth.salvar(usuario);
+    }
+
+    const msgDiv = document.getElementById('msg-metas');
+    msgDiv.style.display = 'flex';
+    setTimeout(() => msgDiv.style.display = 'none', 3000);
+    mostrarToast('✅ Metas salvas!', 'verde');
+  });
+
+  // Init
+  renderPedidos();
+</script>
+</body>
+</html>

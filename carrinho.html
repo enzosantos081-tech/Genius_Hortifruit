@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="img/logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carrinho – GENIUS Hortifruit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<div id="toast-container"></div>
+
+<main class="secao">
+  <div class="container">
+    <h1 style="font-size:1.75rem; font-weight:800; margin-bottom:1.5rem;">🛒 Carrinho de Compras</h1>
+
+    <!-- Carrinho vazio -->
+    <div id="estado-vazio" style="display:none;">
+      <div class="estado-vazio">
+        <div class="emoji">🛒</div>
+        <h3>Seu carrinho está vazio</h3>
+        <p>Adicione produtos para começar suas compras</p>
+        <a href="loja.html" class="btn btn-verde btn-lg">Ir para a Loja</a>
+      </div>
+    </div>
+
+    <!-- Carrinho com itens -->
+    <div class="carrinho-layout" id="carrinho-conteudo">
+      <!-- Itens -->
+      <div id="lista-itens"></div>
+
+      <!-- Resumo -->
+      <div class="resumo-card" id="resumo">
+        <h3>Resumo do Pedido</h3>
+
+        <div class="resumo-linha">
+          <span>Subtotal</span>
+          <span id="resumo-subtotal">R$ 0,00</span>
+        </div>
+        <div class="resumo-linha">
+          <span>Frete</span>
+          <span style="color:var(--verde); font-weight:700;">Grátis</span>
+        </div>
+        <div class="resumo-total">
+          <span>Total</span>
+          <span id="resumo-total" style="color:var(--verde);">R$ 0,00</span>
+        </div>
+
+        <button class="btn btn-verde btn-full btn-lg" id="btn-checkout" style="margin-top:1.25rem;">
+          ✅ Finalizar Pedido
+        </button>
+        <a href="loja.html" class="btn btn-cinza btn-full" style="margin-top:0.75rem;">← Continuar Comprando</a>
+
+        <!-- Nutricional -->
+        <div class="nutri-bloco" id="nutri-bloco">
+          <h4>🔥 Resumo Nutricional do Carrinho</h4>
+
+          <div class="barra-progress-wrap">
+            <div class="barra-label">
+              <span>Calorias</span>
+              <span id="n-cal">0 / 2000 kcal</span>
+            </div>
+            <div class="barra-track"><div class="barra-fill barra-verde" id="b-cal" style="width:0%"></div></div>
+          </div>
+
+          <div class="barra-progress-wrap">
+            <div class="barra-label">
+              <span>💪 Proteínas</span>
+              <span id="n-prot">0 / 150g</span>
+            </div>
+            <div class="barra-track"><div class="barra-fill barra-azul" id="b-prot" style="width:0%"></div></div>
+          </div>
+
+          <div class="barra-progress-wrap">
+            <div class="barra-label">
+              <span>🍞 Carboidratos</span>
+              <span id="n-carb">0 / 250g</span>
+            </div>
+            <div class="barra-track"><div class="barra-fill barra-amarelo" id="b-carb" style="width:0%"></div></div>
+          </div>
+
+          <div class="barra-progress-wrap">
+            <div class="barra-label">
+              <span>🥑 Gorduras</span>
+              <span id="n-gord">0 / 70g</span>
+            </div>
+            <div class="barra-track"><div class="barra-fill barra-vermelho" id="b-gord" style="width:0%"></div></div>
+          </div>
+
+          <div id="alerta-nutri" style="display:none; margin-top:0.75rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom"><p>© 2026 GENIUS Hortifruit.</p></div>
+  </div>
+</footer>
+
+<script src="js/header.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderHeader('');
+
+  function getMetas() {
+    const usuario = Auth.get();
+    return {
+      calorias: usuario?.meta_calorias || 2000,
+      proteina: usuario?.meta_proteina || 150,
+      carboidratos: usuario?.meta_carboidratos || 250,
+      gordura: usuario?.meta_gordura || 70
+    };
+  }
+
+  function clamp(val) { return Math.min(val, 100); }
+
+  function renderCarrinho() {
+    const itens = Carrinho.get();
+    const vazio = document.getElementById('estado-vazio');
+    const conteudo = document.getElementById('carrinho-conteudo');
+    const listaItens = document.getElementById('lista-itens');
+
+    if (itens.length === 0) {
+      vazio.style.display = 'block';
+      conteudo.style.display = 'none';
+      return;
+    }
+
+    vazio.style.display = 'none';
+    conteudo.style.display = 'grid';
+
+    listaItens.innerHTML = itens.map(item => `
+      <div class="item-carrinho">
+        <img src="${item.produto.imagem}" alt="${item.produto.nome}"
+          onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=80'" />
+        <div class="item-carrinho-info">
+          <h4>${item.produto.nome}</h4>
+          <p class="marca-item">${item.produto.marca}</p>
+          <p class="cal-item">🔥 ${item.produto.calorias * item.quantidade} kcal total</p>
+          <div style="color:var(--verde); font-weight:800; font-size:1.05rem; margin-top:0.3rem;">
+            ${formatarMoeda(item.produto.preco * item.quantidade)}
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.75rem;">
+          <button class="btn-remover" onclick="removerItem(${item.produto.id})" title="Remover">🗑️</button>
+          <div class="qtd-controle">
+            <button onclick="mudarQtd(${item.produto.id}, ${item.quantidade - 1})">−</button>
+            <span>${item.quantidade}</span>
+            <button onclick="mudarQtd(${item.produto.id}, ${item.quantidade + 1})">+</button>
+          </div>
+          <span style="font-size:0.75rem; color:var(--cinza-400);">${formatarMoeda(item.produto.preco)}/un</span>
+        </div>
+      </div>
+    `).join('');
+
+    // Atualiza totais
+    const total = Carrinho.totalPreco();
+    document.getElementById('resumo-subtotal').textContent = formatarMoeda(total);
+    document.getElementById('resumo-total').textContent = formatarMoeda(total);
+
+    // Nutricional
+    const nutri = Carrinho.totaisNutricionais();
+    const metas = getMetas();
+
+    const pCalor = clamp(Math.round(nutri.calorias / metas.calorias * 100));
+    const pProt  = clamp(Math.round(nutri.proteina / metas.proteina * 100));
+    const pCarb  = clamp(Math.round(nutri.carboidratos / metas.carboidratos * 100));
+    const pGord  = clamp(Math.round(nutri.gordura / metas.gordura * 100));
+
+    document.getElementById('n-cal').textContent  = `${Math.round(nutri.calorias)} / ${metas.calorias} kcal`;
+    document.getElementById('n-prot').textContent = `${Math.round(nutri.proteina)}g / ${metas.proteina}g`;
+    document.getElementById('n-carb').textContent = `${Math.round(nutri.carboidratos)}g / ${metas.carboidratos}g`;
+    document.getElementById('n-gord').textContent = `${Math.round(nutri.gordura)}g / ${metas.gordura}g`;
+
+    document.getElementById('b-cal').style.width  = `${pCalor}%`;
+    document.getElementById('b-prot').style.width = `${pProt}%`;
+    document.getElementById('b-carb').style.width = `${pCarb}%`;
+    document.getElementById('b-gord').style.width = `${pGord}%`;
+
+    // Alerta calórico
+    const alertaDiv = document.getElementById('alerta-nutri');
+    if (nutri.calorias > metas.calorias) {
+      alertaDiv.style.display = 'block';
+      alertaDiv.innerHTML = `<div class="alerta alerta-vermelho">⚠️ Você ultrapassou sua meta calórica diária! (${Math.round(nutri.calorias - metas.calorias)} kcal acima)</div>`;
+    } else if (nutri.calorias > metas.calorias * 0.8) {
+      alertaDiv.style.display = 'block';
+      alertaDiv.innerHTML = `<div class="alerta alerta-amarelo">⚡ Você está próximo da sua meta calórica diária!</div>`;
+    } else {
+      alertaDiv.style.display = 'none';
+    }
+  }
+
+  function removerItem(id) {
+    Carrinho.remover(id);
+    renderCarrinho();
+    mostrarToast('Item removido do carrinho', '');
+  }
+
+  function mudarQtd(id, novaQtd) {
+    Carrinho.atualizarQtd(id, novaQtd);
+    renderCarrinho();
+  }
+
+  document.getElementById('btn-checkout').addEventListener('click', () => {
+    const usuario = Auth.get();
+    if (!usuario) {
+      mostrarToast('Faça login para finalizar o pedido', 'vermelho');
+      setTimeout(() => window.location.href = 'login.html', 1500);
+      return;
+    }
+    window.location.href = 'checkout.html';
+  });
+
+  renderCarrinho();
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="img/logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loja Online – GENIUS Hortifruit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<div id="toast-container"></div>
+
+<main class="secao">
+  <div class="container">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+      <h1 style="font-size:1.75rem; font-weight:800;">🛍️ Loja Online</h1>
+      <button class="filtros-mobile-btn" id="btn-filtros-mobile">
+        🔧 Filtros
+      </button>
+    </div>
+
+    <div class="loja-layout">
+      <!-- FILTROS SIDEBAR -->
+      <aside class="filtros-sidebar" id="filtros-sidebar">
+        <h3>🔧 Filtros</h3>
+
+        <div class="filtro-grupo">
+          <label>Buscar</label>
+          <div class="busca-input">
+            <span class="icon-busca">🔍</span>
+            <input type="text" id="input-busca" placeholder="Nome ou marca..." />
+          </div>
+        </div>
+
+        <div class="filtro-grupo">
+          <label>Categoria</label>
+          <div class="cats-lista" id="lista-categorias">
+            <!-- dinâmico -->
+          </div>
+        </div>
+
+        <div class="filtro-grupo">
+          <label>Preço máximo: <strong id="label-preco">R$ 100</strong></label>
+          <input type="range" id="range-preco" min="0" max="100" value="100" style="width:100%; accent-color:var(--verde);" />
+        </div>
+
+        <div class="filtro-grupo">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" id="check-saudavel" style="accent-color:var(--verde); width:16px; height:16px;" />
+            <span>Apenas produtos saudáveis</span>
+          </label>
+        </div>
+
+        <button class="btn btn-cinza btn-full" id="btn-limpar-filtros">Limpar Filtros</button>
+      </aside>
+
+      <!-- PRODUTOS -->
+      <div>
+        <p style="color:var(--cinza-600); font-size:0.875rem; margin-bottom:1rem;" id="contador-produtos"></p>
+        <div class="grid-produtos" id="grid-produtos"></div>
+        <div id="estado-vazio" style="display:none;">
+          <div class="estado-vazio">
+            <div class="emoji">🥺</div>
+            <h3>Nenhum produto encontrado</h3>
+            <p>Tente ajustar os filtros de busca</p>
+            <button class="btn btn-verde" id="btn-limpar-vazio">Limpar Filtros</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL FILTROS MOBILE -->
+<div class="modal-overlay" id="modal-filtros">
+  <div class="modal">
+    <button class="modal-fechar" id="fechar-modal-filtros">✕</button>
+    <h3 style="font-weight:800; margin-bottom:1.25rem;">🔧 Filtros</h3>
+
+    <div class="filtro-grupo">
+      <label>Buscar</label>
+      <div class="busca-input">
+        <span class="icon-busca">🔍</span>
+        <input type="text" id="input-busca-m" placeholder="Nome ou marca..." />
+      </div>
+    </div>
+
+    <div class="filtro-grupo">
+      <label>Categoria</label>
+      <select id="select-cat-m" style="width:100%; padding:0.6rem; border:2px solid var(--cinza-200); border-radius:8px; font-family:'Poppins',sans-serif;">
+        <option value="Todos">Todos</option>
+      </select>
+    </div>
+
+    <div class="filtro-grupo">
+      <label>Preço máximo: <strong id="label-preco-m">R$ 100</strong></label>
+      <input type="range" id="range-preco-m" min="0" max="100" value="100" style="width:100%; accent-color:var(--verde);" />
+    </div>
+
+    <div class="filtro-grupo">
+      <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+        <input type="checkbox" id="check-saudavel-m" style="accent-color:var(--verde); width:18px; height:18px;" />
+        <span>Apenas produtos saudáveis</span>
+      </label>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:1rem;">
+      <button class="btn btn-cinza" id="btn-limpar-m">Limpar</button>
+      <button class="btn btn-verde" id="btn-aplicar-m">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4><img src="img/logo.png" alt="" style="height:18px;vertical-align:middle;margin-right:4px;" /> GENIUS Hortifruit</h4>
+        <p>Mercado inteligente com foco em saúde e nutrição.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Navegação</h4>
+        <a href="index.html">Home</a>
+        <a href="loja.html">Loja Online</a>
+        <a href="carrinho.html">Carrinho</a>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© 2026 GENIUS Hortifruit.</p></div>
+  </div>
+</footer>
+
+<script src="js/header.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderHeader('loja');
+
+  let categoriaAtual = 'Todos';
+  let precoMax = 100;
+  let buscaTerm = '';
+  let apenasS = false;
+
+  // Pega parâmetro URL
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('filtro') === 'saudavel') apenasS = true;
+
+  // Carrega produtos do backend e inicializa a loja
+  async function iniciarLoja() {
+    try {
+      PRODUTOS_DEMO = await Api.get('/produtos');
+      // Ajusta preço máximo pelo produto mais caro
+      const maxPreco = Math.ceil(Math.max(...PRODUTOS_DEMO.map(p => p.preco)));
+      precoMax = maxPreco;
+      document.getElementById('range-preco').max = maxPreco;
+      document.getElementById('range-preco').value = maxPreco;
+      document.getElementById('label-preco').textContent = `R$ ${maxPreco}`;
+      document.getElementById('range-preco-m').max = maxPreco;
+      document.getElementById('range-preco-m').value = maxPreco;
+      document.getElementById('label-preco-m').textContent = `R$ ${maxPreco}`;
+    } catch (e) {
+      document.getElementById('grid-produtos').innerHTML =
+        '<p style="color:red">⚠️ Erro ao carregar produtos. Verifique se o servidor está rodando.</p>';
+      return;
+    }
+    if (apenasS) document.getElementById('check-saudavel').checked = true;
+    renderCategorias();
+    renderProdutos();
+  }
+
+  function getCategorias() {
+    const cats = ['Todos', ...new Set(PRODUTOS_DEMO.map(p => p.categoria))];
+    return cats;
+  }
+
+  function renderCategorias() {
+    const lista = document.getElementById('lista-categorias');
+    const cats = getCategorias();
+    lista.innerHTML = cats.map(cat => `
+      <button class="${cat === categoriaAtual ? 'ativo' : ''}" onclick="setCategoria('${cat}')">${cat}</button>
+    `).join('');
+
+    // Mobile select
+    const selectM = document.getElementById('select-cat-m');
+    selectM.innerHTML = cats.map(c => `<option value="${c}" ${c === categoriaAtual ? 'selected' : ''}>${c}</option>`).join('');
+  }
+
+  function setCategoria(cat) {
+    categoriaAtual = cat;
+    renderCategorias();
+    renderProdutos();
+  }
+
+  function filtrar() {
+    return PRODUTOS_DEMO.filter(p => {
+      const matchNome = p.nome.toLowerCase().includes(buscaTerm.toLowerCase()) || p.marca.toLowerCase().includes(buscaTerm.toLowerCase());
+      const matchCat = categoriaAtual === 'Todos' || p.categoria === categoriaAtual;
+      const matchPreco = p.preco <= precoMax;
+      const matchS = !apenasS || p.saudavel;
+      return matchNome && matchCat && matchPreco && matchS;
+    });
+  }
+
+  function criarCard(p) {
+    return `
+      <div class="card-produto">
+        <a href="produto.html?id=${p.id}">
+          <img src="${p.imagem}" alt="${p.nome}" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80'" />
+        </a>
+        <div class="card-produto-info">
+          ${p.saudavel ? '<span class="tag-saudavel"><img src="img/logo.png" alt="" style="height:13px;vertical-align:middle;margin-right:3px;"/>Saudável</span>' : ''}
+          <h3><a href="produto.html?id=${p.id}" style="color:inherit;">${p.nome}</a></h3>
+          <p class="marca">${p.marca} · ${p.categoria}</p>
+          <p class="calorias">🔥 ${p.calorias} kcal &nbsp; 💪 ${p.proteina}g prot</p>
+          <div class="card-produto-footer">
+            <span class="preco">${formatarMoeda(p.preco)}</span>
+            <button class="btn-add" title="Adicionar ao carrinho" onclick='Carrinho.adicionar(${JSON.stringify(p).replace(/'/g, "\\'")})'>+</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderProdutos() {
+    const filtrados = filtrar();
+    const grid = document.getElementById('grid-produtos');
+    const vazio = document.getElementById('estado-vazio');
+    const contador = document.getElementById('contador-produtos');
+
+    contador.textContent = `${filtrados.length} produto(s) encontrado(s)`;
+
+    if (filtrados.length === 0) {
+      grid.innerHTML = '';
+      vazio.style.display = 'block';
+    } else {
+      vazio.style.display = 'none';
+      grid.innerHTML = filtrados.map(criarCard).join('');
+    }
+  }
+
+  function limparFiltros() {
+    categoriaAtual = 'Todos';
+    precoMax = 100;
+    buscaTerm = '';
+    apenasS = false;
+    document.getElementById('input-busca').value = '';
+    document.getElementById('range-preco').value = 100;
+    document.getElementById('label-preco').textContent = 'R$ 100';
+    document.getElementById('check-saudavel').checked = false;
+    renderCategorias();
+    renderProdutos();
+  }
+
+  // Eventos desktop
+  document.getElementById('input-busca').addEventListener('input', e => {
+    buscaTerm = e.target.value;
+    document.getElementById('input-busca-m').value = buscaTerm;
+    renderProdutos();
+  });
+
+  document.getElementById('range-preco').addEventListener('input', e => {
+    precoMax = Number(e.target.value);
+    document.getElementById('label-preco').textContent = `R$ ${precoMax}`;
+    document.getElementById('range-preco-m').value = precoMax;
+    document.getElementById('label-preco-m').textContent = `R$ ${precoMax}`;
+    renderProdutos();
+  });
+
+  document.getElementById('check-saudavel').addEventListener('change', e => {
+    apenasS = e.target.checked;
+    document.getElementById('check-saudavel-m').checked = apenasS;
+    renderProdutos();
+  });
+
+  document.getElementById('btn-limpar-filtros').addEventListener('click', limparFiltros);
+  document.getElementById('btn-limpar-vazio').addEventListener('click', limparFiltros);
+
+  // Modal mobile
+  document.getElementById('btn-filtros-mobile').addEventListener('click', () => {
+    document.getElementById('modal-filtros').classList.add('aberto');
+  });
+
+  document.getElementById('fechar-modal-filtros').addEventListener('click', () => {
+    document.getElementById('modal-filtros').classList.remove('aberto');
+  });
+
+  document.getElementById('btn-limpar-m').addEventListener('click', () => {
+    limparFiltros();
+    document.getElementById('modal-filtros').classList.remove('aberto');
+  });
+
+  document.getElementById('btn-aplicar-m').addEventListener('click', () => {
+    buscaTerm = document.getElementById('input-busca-m').value;
+    document.getElementById('input-busca').value = buscaTerm;
+    categoriaAtual = document.getElementById('select-cat-m').value;
+    precoMax = Number(document.getElementById('range-preco-m').value);
+    document.getElementById('range-preco').value = precoMax;
+    document.getElementById('label-preco').textContent = `R$ ${precoMax}`;
+    apenasS = document.getElementById('check-saudavel-m').checked;
+    document.getElementById('check-saudavel').checked = apenasS;
+    renderCategorias();
+    renderProdutos();
+    document.getElementById('modal-filtros').classList.remove('aberto');
+  });
+
+  document.getElementById('range-preco-m').addEventListener('input', e => {
+    document.getElementById('label-preco-m').textContent = `R$ ${e.target.value}`;
+  });
+
+  // Verifica parâmetro saudável
+  if (apenasS) document.getElementById('check-saudavel').checked = true;
+
+  // Init — carrega da API
+  iniciarLoja();
+</script>
+</body>
+</html>

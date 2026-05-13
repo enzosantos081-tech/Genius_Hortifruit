@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="img/logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout – GENIUS Hortifruit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<div id="toast-container"></div>
+
+<!-- TELA DE SUCESSO -->
+<div id="tela-sucesso" style="display:none;">
+  <div style="min-height:calc(100vh - 64px); display:flex; align-items:center; justify-content:center; background:var(--cinza-50); padding:2rem;">
+    <div style="background:white; border-radius:var(--radius); padding:3rem; text-align:center; max-width:480px; box-shadow:var(--sombra-md);">
+      <div style="font-size:4rem; margin-bottom:1rem;">🎉</div>
+      <h2 style="font-size:1.75rem; font-weight:800; color:var(--verde); margin-bottom:0.75rem;">Pedido Confirmado!</h2>
+      <p style="color:var(--cinza-600); margin-bottom:0.5rem;">Seu pedido foi realizado com sucesso.</p>
+      <p id="msg-pedido-info" style="color:var(--cinza-600); margin-bottom:2rem;"></p>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;">
+        <a href="loja.html" class="btn btn-verde btn-lg">🛒 Continuar Comprando</a>
+        <a href="cliente.html" class="btn btn-cinza">👤 Ver Meus Pedidos</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TELA PIX -->
+<div id="tela-pix" style="display:none;">
+  <div style="min-height:calc(100vh - 64px); display:flex; align-items:center; justify-content:center; background:var(--cinza-50); padding:2rem;">
+    <div style="background:white; border-radius:var(--radius); padding:2.5rem; text-align:center; max-width:440px; box-shadow:var(--sombra-md);">
+      <div style="font-size:3rem; margin-bottom:1rem;">📲</div>
+      <h2 style="font-weight:800; margin-bottom:0.5rem;">Pague via PIX</h2>
+      <p style="color:var(--cinza-600); margin-bottom:1.25rem;">Use a chave PIX abaixo para realizar o pagamento</p>
+
+      <div class="pix-bloco">
+        <p style="font-size:0.8rem; color:var(--cinza-600); margin-bottom:0.5rem;">Chave PIX (CNPJ):</p>
+        <div class="pix-chave">00.000.000/0001-00</div>
+        <p style="font-size:0.8rem; color:var(--cinza-600); margin-bottom:0.5rem;">Titular:</p>
+        <p style="font-weight:700;">GENIUS Hortifruit LTDA</p>
+        <p style="margin-top:0.75rem; font-size:1.1rem; font-weight:800; color:var(--verde);" id="pix-valor-total"></p>
+      </div>
+
+      <button class="btn btn-azul btn-full" id="btn-copiar-pix" style="margin-top:1.25rem;">
+        📋 Copiar Chave PIX
+      </button>
+
+      <div id="pix-copiado" class="alerta alerta-verde" style="display:none; margin-top:0.75rem;">✅ Chave copiada!</div>
+
+      <div style="margin-top:1.5rem; padding:1rem; background:var(--amarelo-claro); border-radius:var(--radius-sm); font-size:0.875rem; color:#92400e;">
+        ⏰ Após o pagamento, confirme e seu pedido será processado em até 5 minutos.
+      </div>
+
+      <button class="btn btn-verde btn-full btn-lg" id="btn-confirmar-pix" style="margin-top:1rem;">
+        ✅ Confirmei o Pagamento
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- FORMULÁRIO CHECKOUT -->
+<main id="main-checkout" class="secao">
+  <div class="container">
+    <div style="margin-bottom:1.25rem;">
+      <a href="carrinho.html" style="color:var(--verde); font-weight:600; font-size:0.875rem;">← Voltar ao Carrinho</a>
+    </div>
+    <h1 style="font-size:1.75rem; font-weight:800; margin-bottom:1.5rem;">🏁 Finalizar Pedido</h1>
+
+    <div class="checkout-layout">
+      <div>
+
+        <!-- ENTREGA -->
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-body">
+            <h3 style="font-weight:800; margin-bottom:1rem;">🚚 Tipo de Entrega</h3>
+            <div class="opcoes-entrega">
+              <div class="opcao-card ativo" id="op-domicilio" onclick="setEntrega('domicilio')">
+                <div class="opcao-icon">🏠</div>
+                <div class="opcao-titulo">Entrega em Casa</div>
+                <div class="opcao-desc">Grátis · 1-3 dias úteis</div>
+              </div>
+              <div class="opcao-card" id="op-retirada" onclick="setEntrega('retirada')">
+                <div class="opcao-icon">🏪</div>
+                <div class="opcao-titulo">Retirar na Loja</div>
+                <div class="opcao-desc">Disponível em 2h</div>
+              </div>
+            </div>
+
+            <div id="campo-endereco">
+              <div class="form-group">
+                <label>Endereço de entrega</label>
+                <input type="text" id="endereco-entrega" placeholder="Rua, número, bairro, cidade" />
+              </div>
+            </div>
+
+            <div id="info-retirada" style="display:none;">
+              <div class="alerta alerta-azul">
+                📍 Av. Saúde, 150 – Centro, Indaiatuba/SP<br>
+                ⏰ Seg-Sex: 7h-20h | Sab: 7h-18h | Dom: 8h-14h
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGAMENTO -->
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-body">
+            <h3 style="font-weight:800; margin-bottom:1rem;">💳 Forma de Pagamento</h3>
+            <div class="opcoes-pagamento">
+              <div class="opcao-card ativo" id="op-credito" onclick="setPagamento('credito')">
+                <div class="opcao-icon">💳</div>
+                <div class="opcao-titulo">Crédito</div>
+              </div>
+              <div class="opcao-card" id="op-debito" onclick="setPagamento('debito')">
+                <div class="opcao-icon">🏦</div>
+                <div class="opcao-titulo">Débito</div>
+              </div>
+              <div class="opcao-card" id="op-pix" onclick="setPagamento('pix')">
+                <div class="opcao-icon">📱</div>
+                <div class="opcao-titulo">PIX</div>
+              </div>
+            </div>
+
+            <!-- Cartão -->
+            <div id="campos-cartao">
+              <div class="form-group">
+                <label>Número do Cartão</label>
+                <input type="text" id="cartao-num" placeholder="0000 0000 0000 0000" maxlength="19" />
+              </div>
+              <div class="form-group">
+                <label>Nome no Cartão</label>
+                <input type="text" id="cartao-nome" placeholder="Como está no cartão" style="text-transform:uppercase;" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Validade</label>
+                  <input type="text" id="cartao-val" placeholder="MM/AA" maxlength="5" />
+                </div>
+                <div class="form-group">
+                  <label>CVV</label>
+                  <input type="text" id="cartao-cvv" placeholder="000" maxlength="4" />
+                </div>
+              </div>
+            </div>
+
+            <!-- PIX info -->
+            <div id="info-pix" style="display:none;">
+              <div class="alerta alerta-azul">
+                📲 Ao finalizar, exibimos a chave PIX para você copiar e pagar.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OBSERVAÇÕES -->
+        <div class="card">
+          <div class="card-body">
+            <h3 style="font-weight:800; margin-bottom:1rem;">💬 Observações</h3>
+            <div class="form-group">
+              <textarea id="obs" rows="3" placeholder="Alguma instrução especial? (opcional)"
+                style="width:100%; padding:0.75rem; border:2px solid var(--cinza-200); border-radius:8px; font-family:'Poppins',sans-serif; font-size:0.9rem; outline:none; resize:vertical;"></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RESUMO -->
+      <div class="resumo-card">
+        <h3>Resumo do Pedido</h3>
+
+        <div id="resumo-itens" style="max-height:220px; overflow-y:auto; margin-bottom:0.75rem;"></div>
+
+        <div class="resumo-linha">
+          <span>Subtotal</span>
+          <span id="ck-subtotal">R$ 0,00</span>
+        </div>
+        <div class="resumo-linha">
+          <span>Frete</span>
+          <span style="color:var(--verde); font-weight:700;">Grátis</span>
+        </div>
+        <div class="resumo-total">
+          <span>Total</span>
+          <span id="ck-total" style="color:var(--verde);">R$ 0,00</span>
+        </div>
+
+        <div class="nutri-bloco" style="margin-top:1rem;">
+          <h4>🔥 Nutrição do Pedido</h4>
+          <p style="font-size:0.8rem; color:var(--cinza-600);">
+            Calorias: <strong id="ck-cal">0 kcal</strong><br>
+            Proteínas: <strong id="ck-prot">0g</strong> &nbsp;
+            Carbs: <strong id="ck-carb">0g</strong> &nbsp;
+            Gorduras: <strong id="ck-gord">0g</strong>
+          </p>
+        </div>
+
+        <div id="erro-checkout" class="alerta alerta-vermelho" style="display:none; margin-top:0.75rem;"></div>
+
+        <button class="btn btn-verde btn-full btn-lg" id="btn-finalizar" style="margin-top:1.25rem;">
+          ✅ Confirmar Pedido
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/header.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderHeader('');
+
+  // Verificações iniciais
+  const usuario = Auth.get();
+  if (!usuario) {
+    window.location.href = 'login.html';
+  }
+
+  const itens = Carrinho.get();
+  if (itens.length === 0) {
+    window.location.href = 'carrinho.html';
+  }
+
+  let tipoEntrega = 'domicilio';
+  let tipoPagamento = 'credito';
+
+  // Preenche endereço do usuário
+  if (usuario) {
+    const end = `${usuario.rua || ''}, ${usuario.numero || ''} – ${usuario.bairro || ''}, ${usuario.cidade || ''}`.replace(/^\s*,\s*/, '').trim();
+    document.getElementById('endereco-entrega').value = end !== '–' ? end : '';
+  }
+
+  function setEntrega(tipo) {
+    tipoEntrega = tipo;
+    document.getElementById('op-domicilio').classList.toggle('ativo', tipo === 'domicilio');
+    document.getElementById('op-retirada').classList.toggle('ativo', tipo === 'retirada');
+    document.getElementById('campo-endereco').style.display = tipo === 'domicilio' ? 'block' : 'none';
+    document.getElementById('info-retirada').style.display = tipo === 'retirada' ? 'block' : 'none';
+  }
+
+  function setPagamento(tipo) {
+    tipoPagamento = tipo;
+    ['credito','debito','pix'].forEach(t => {
+      document.getElementById(`op-${t}`).classList.toggle('ativo', t === tipo);
+    });
+    document.getElementById('campos-cartao').style.display = tipo !== 'pix' ? 'block' : 'none';
+    document.getElementById('info-pix').style.display = tipo === 'pix' ? 'block' : 'none';
+  }
+
+  // Máscaras cartão
+  document.getElementById('cartao-num').addEventListener('input', e => {
+    e.target.value = formatarCartao(e.target.value);
+  });
+  document.getElementById('cartao-val').addEventListener('input', e => {
+    e.target.value = formatarExpiry(e.target.value);
+  });
+  document.getElementById('cartao-cvv').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g,'').slice(0,4);
+  });
+  document.getElementById('cartao-nome').addEventListener('input', e => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  // Renderiza resumo
+  function renderResumo() {
+    const total = Carrinho.totalPreco();
+    const nutri = Carrinho.totaisNutricionais();
+
+    document.getElementById('ck-subtotal').textContent = formatarMoeda(total);
+    document.getElementById('ck-total').textContent = formatarMoeda(total);
+    document.getElementById('ck-cal').textContent = `${Math.round(nutri.calorias)} kcal`;
+    document.getElementById('ck-prot').textContent = `${Math.round(nutri.proteina)}g`;
+    document.getElementById('ck-carb').textContent = `${Math.round(nutri.carboidratos)}g`;
+    document.getElementById('ck-gord').textContent = `${Math.round(nutri.gordura)}g`;
+
+    document.getElementById('resumo-itens').innerHTML = itens.map(i => `
+      <div style="display:flex; justify-content:space-between; padding:0.4rem 0; font-size:0.85rem; border-bottom:1px solid var(--cinza-100);">
+        <span style="flex:1; color:var(--cinza-700);">${i.produto.nome} ×${i.quantidade}</span>
+        <span style="font-weight:700;">${formatarMoeda(i.produto.preco * i.quantidade)}</span>
+      </div>
+    `).join('');
+  }
+
+  // Finalizar
+  document.getElementById('btn-finalizar').addEventListener('click', () => {
+    const erroDiv = document.getElementById('erro-checkout');
+
+    if (tipoEntrega === 'domicilio' && !document.getElementById('endereco-entrega').value.trim()) {
+      erroDiv.style.display = 'flex';
+      erroDiv.textContent = '❌ Informe o endereço de entrega';
+      return;
+    }
+
+    if (tipoPagamento !== 'pix') {
+      const num = document.getElementById('cartao-num').value.replace(/\s/g,'');
+      const nome = document.getElementById('cartao-nome').value.trim();
+      const val = document.getElementById('cartao-val').value;
+      const cvv = document.getElementById('cartao-cvv').value;
+
+      if (num.length < 16) return mostrarErroCK('❌ Número do cartão inválido');
+      if (!nome) return mostrarErroCK('❌ Informe o nome no cartão');
+      if (val.length < 5) return mostrarErroCK('❌ Validade inválida');
+      if (cvv.length < 3) return mostrarErroCK('❌ CVV inválido');
+    }
+
+    erroDiv.style.display = 'none';
+
+    if (tipoPagamento === 'pix') {
+      document.getElementById('main-checkout').style.display = 'none';
+      document.getElementById('tela-pix').style.display = 'block';
+      document.getElementById('pix-valor-total').textContent = `Total: ${formatarMoeda(Carrinho.totalPreco())}`;
+    } else {
+      salvarPedido();
+    }
+  });
+
+  function mostrarErroCK(msg) {
+    const d = document.getElementById('erro-checkout');
+    d.style.display = 'flex';
+    d.textContent = msg;
+  }
+
+  // PIX copiar
+  document.getElementById('btn-copiar-pix').addEventListener('click', () => {
+    navigator.clipboard.writeText('00.000.000/0001-00').then(() => {
+      document.getElementById('pix-copiado').style.display = 'flex';
+    });
+  });
+
+  document.getElementById('btn-confirmar-pix').addEventListener('click', salvarPedido);
+
+  async function salvarPedido() {
+    const nutri = Carrinho.totaisNutricionais();
+    const pedido = {
+      usuario_id: usuario.id,
+      itens: itens.map(i => ({
+        produto_id: i.produto.id,
+        nome: i.produto.nome,
+        quantidade: i.quantidade,
+        preco_unit: i.produto.preco
+      })),
+      total_preco: Carrinho.totalPreco(),
+      total_calorias: nutri.calorias,
+      total_proteina: nutri.proteina,
+      total_carboidratos: nutri.carboidratos,
+      total_gordura: nutri.gordura,
+      entrega: tipoEntrega,
+      pagamento: tipoPagamento,
+      endereco: document.getElementById('endereco-entrega')?.value || '',
+      status: 'confirmado'
+    };
+
+    try {
+      await Api.post('/pedidos', pedido);
+    } catch (e) {
+      mostrarErroCK('❌ Erro ao registrar pedido. Tente novamente.');
+      return;
+    }
+
+    Carrinho.limpar();
+
+    document.getElementById('main-checkout').style.display = 'none';
+    document.getElementById('tela-pix').style.display = 'none';
+    document.getElementById('tela-sucesso').style.display = 'block';
+
+    const msg = tipoEntrega === 'domicilio'
+      ? `Entrega no endereço informado em 1-3 dias úteis. Pagamento via ${tipoPagamento}.`
+      : `Retirada disponível em até 2 horas. Pagamento via ${tipoPagamento}.`;
+    document.getElementById('msg-pedido-info').textContent = msg;
+  }
+
+  renderResumo();
+</script>
+</body>
+</html>

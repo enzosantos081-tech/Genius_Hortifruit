@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="img/logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Produto – GENIUS Hortifruit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<div id="toast-container"></div>
+
+<main class="secao">
+  <div class="container">
+    <div style="margin-bottom:1rem;">
+      <a href="loja.html" style="color:var(--verde); font-weight:600; font-size:0.875rem;">← Voltar para a Loja</a>
+    </div>
+    <div id="produto-conteudo"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom"><p>© 2026 GENIUS Hortifruit.</p></div>
+  </div>
+</footer>
+
+<script src="js/header.js"></script>
+<script src="js/app.js"></script>
+<script>
+  renderHeader('loja');
+
+  const params = new URLSearchParams(window.location.search);
+  const id = Number(params.get('id'));
+  const conteudo = document.getElementById('produto-conteudo');
+
+  async function carregarProduto() {
+    try {
+      PRODUTOS_DEMO = await Api.get('/produtos');
+    } catch (e) {
+      conteudo.innerHTML = `<div class="estado-vazio"><div class="emoji">⚠️</div><h3>Servidor offline</h3><p>Verifique se o backend está rodando.</p></div>`;
+      return;
+    }
+
+    const produto = PRODUTOS_DEMO.find(p => p.id === id);
+
+  if (!produto) {
+    conteudo.innerHTML = `
+      <div class="estado-vazio">
+        <div class="emoji">😕</div>
+        <h3>Produto não encontrado</h3>
+        <p>O produto que você buscou não existe.</p>
+        <a href="loja.html" class="btn btn-verde">Ir para a Loja</a>
+      </div>
+    `;
+    return;
+  }
+
+    document.title = `${produto.nome} – GENIUS Hortifruit`;
+
+    const macro = (nome, valor, unidade, cor) => `
+      <div style="background:${cor}; border-radius:10px; padding:1rem; text-align:center;">
+        <div style="font-size:1.4rem; font-weight:900; color:var(--cinza-900);">${valor}${unidade}</div>
+        <div style="font-size:0.75rem; font-weight:700; color:var(--cinza-600); margin-top:0.2rem;">${nome}</div>
+      </div>
+    `;
+
+    conteudo.innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; align-items:start;">
+        <div>
+          <img src="${produto.imagem}" alt="${produto.nome}"
+            style="width:100%; height:360px; object-fit:cover; border-radius:var(--radius); box-shadow:var(--sombra-md);"
+            onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80'" />
+        </div>
+
+        <div>
+          ${produto.saudavel ? '<span class="tag-saudavel" style="font-size:0.875rem; padding:0.3rem 0.8rem;"><img src="img/logo.png" alt="" style="height:14px;vertical-align:middle;margin-right:4px;"/>Produto Saudável</span>' : ''}
+          <h1 style="font-size:1.75rem; font-weight:800; margin:0.75rem 0 0.25rem;">${produto.nome}</h1>
+          <p style="color:var(--cinza-500); margin-bottom:0.5rem;">${produto.marca} · ${produto.categoria}</p>
+
+          <div style="display:flex; align-items:baseline; gap:0.5rem; margin:1rem 0;">
+            <span style="font-size:2.2rem; font-weight:900; color:var(--verde); font-family:'Nunito',sans-serif;">${formatarMoeda(produto.preco)}</span>
+            <span style="color:var(--cinza-500); font-size:0.875rem;">por unidade</span>
+          </div>
+
+          <p style="color:var(--cinza-600); font-size:0.875rem; margin-bottom:0.5rem;">
+            📦 Estoque: <strong>${produto.estoque} unidades</strong>
+          </p>
+
+          <div id="qtd-wrap" style="display:flex; align-items:center; gap:1rem; margin:1.5rem 0;">
+            <div class="qtd-controle">
+              <button id="btn-menos">−</button>
+              <span id="qtd-valor">1</span>
+              <button id="btn-mais">+</button>
+            </div>
+            <button class="btn btn-verde btn-lg" id="btn-add-carrinho">🛒 Adicionar ao Carrinho</button>
+          </div>
+
+          <div class="card" style="margin-top:1.5rem;">
+            <div class="card-body">
+              <h3 style="font-weight:800; font-size:0.95rem; margin-bottom:1rem;">📊 Informações Nutricionais <span style="font-size:0.75rem; color:var(--cinza-500); font-weight:400;">(por 100g)</span></h3>
+              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:0.75rem;">
+                ${macro('Calorias', produto.calorias, ' kcal', '#fef9c3')}
+                ${macro('Proteínas', produto.proteina, 'g', '#dcfce7')}
+                ${macro('Carboidratos', produto.carboidratos, 'g', '#dbeafe')}
+                ${macro('Gorduras', produto.gordura, 'g', '#fee2e2')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Produtos relacionados -->
+      <div style="margin-top:3rem;">
+        <h2 style="font-size:1.3rem; font-weight:800; margin-bottom:1.25rem;">Produtos Relacionados</h2>
+        <div class="grid-produtos" id="grid-relacionados"></div>
+      </div>
+    `;
+
+    // Quantidade
+    let qtd = 1;
+    document.getElementById('btn-menos').addEventListener('click', () => {
+      if (qtd > 1) { qtd--; document.getElementById('qtd-valor').textContent = qtd; }
+    });
+    document.getElementById('btn-mais').addEventListener('click', () => {
+      if (qtd < produto.estoque) { qtd++; document.getElementById('qtd-valor').textContent = qtd; }
+    });
+
+    document.getElementById('btn-add-carrinho').addEventListener('click', () => {
+      for (let i = 0; i < qtd; i++) Carrinho.adicionar(produto);
+    });
+
+    // Relacionados
+    const relacionados = PRODUTOS_DEMO.filter(p => p.categoria === produto.categoria && p.id !== produto.id).slice(0, 4);
+    const gridR = document.getElementById('grid-relacionados');
+    gridR.innerHTML = relacionados.map(p => `
+      <div class="card-produto">
+        <a href="produto.html?id=${p.id}">
+          <img src="${p.imagem}" alt="${p.nome}" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80'" />
+        </a>
+        <div class="card-produto-info">
+          <h3><a href="produto.html?id=${p.id}" style="color:inherit;">${p.nome}</a></h3>
+          <p class="marca">${p.marca}</p>
+          <div class="card-produto-footer">
+            <span class="preco">${formatarMoeda(p.preco)}</span>
+            <button class="btn-add" onclick='Carrinho.adicionar(${JSON.stringify(p).replace(/'/g, "\\'")})'>+</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  carregarProduto();</script>
+<style>
+  @media (max-width: 768px) {
+    #produto-conteudo > div:first-child { grid-template-columns: 1fr !important; }
+    #produto-conteudo img { height: 240px !important; }
+  }
+</style>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="img/logo.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – GENIUS Hortifruit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<div id="toast-container"></div>
+
+<!-- MODAL PRODUTO -->
+<div class="modal-overlay" id="modal-produto">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-fechar" id="fechar-modal-produto">✕</button>
+    <h3 style="font-weight:800; margin-bottom:1.25rem;" id="modal-titulo">➕ Novo Produto</h3>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nome *</label>
+        <input type="text" id="p-nome" placeholder="Nome do produto" />
+      </div>
+      <div class="form-group">
+        <label>Marca *</label>
+        <input type="text" id="p-marca" placeholder="Marca" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Preço (R$) *</label>
+        <input type="number" id="p-preco" placeholder="0.00" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Estoque *</label>
+        <input type="number" id="p-estoque" placeholder="0" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Categoria *</label>
+        <select id="p-categoria">
+          <option value="">Selecione...</option>
+          <option>Proteínas</option>
+          <option>Frutas</option>
+          <option>Verduras</option>
+          <option>Laticínios</option>
+          <option>Cereais</option>
+          <option>Saladas</option>
+          <option>Snacks</option>
+          <option>Suplementos</option>
+          <option>Outros</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; padding-top:1.5rem;">
+          <input type="checkbox" id="p-saudavel" style="accent-color:var(--verde); width:18px; height:18px;" />
+          Produto saudável
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>URL da Imagem</label>
+      <input type="url" id="p-imagem" placeholder="https://..." />
+    </div>
+
+    <h4 style="font-weight:700; font-size:0.875rem; margin-bottom:0.75rem; margin-top:0.5rem;">📊 Informações Nutricionais (por 100g)</h4>
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:0.75rem;">
+      <div class="form-group">
+        <label>Calorias</label>
+        <input type="number" id="p-cal" placeholder="0" />
+      </div>
+      <div class="form-group">
+        <label>Proteínas (g)</label>
+        <input type="number" id="p-prot" placeholder="0" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>Carboidratos (g)</label>
+        <input type="number" id="p-carb" placeholder="0" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>Gorduras (g)</label>
+        <input type="number" id="p-gord" placeholder="0" step="0.1" />
+      </div>
+    </div>
+
+    <div id="erro-produto" class="alerta alerta-vermelho" style="display:none;"></div>
+
+    <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+      <button class="btn btn-cinza" onclick="fecharModalProduto()">Cancelar</button>
+      <button class="btn btn-verde" id="btn-salvar-produto">💾 Salvar Produto</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT ADMIN -->
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <h3>Principal</h3>
+    <button class="admin-nav-link ativo" id="nav-dashboard" onclick="setSecao('dashboard')">📊 Dashboard</button>
+    <button class="admin-nav-link" id="nav-produtos" onclick="setSecao('produtos')">📦 Produtos</button>
+    <button class="admin-nav-link" id="nav-usuarios" onclick="setSecao('usuarios')">👤 Usuários</button>
+    <button class="admin-nav-link" id="nav-pedidos" onclick="setSecao('pedidos')">🛍️ Pedidos</button>
+    <h3>Sistema</h3>
+    <a href="index.html" class="admin-nav-link"><img src="img/logo.png" alt="" style="height:16px;vertical-align:middle;margin-right:4px;"/> Ver Loja</a>
+    <button class="admin-nav-link" onclick="Auth.sair(); window.location.href='index.html'">🚪 Sair</button>
+  </aside>
+
+  <!-- Conteúdo -->
+  <div class="admin-content">
+    <div id="header-placeholder" style="display:none;"></div>
+    <div id="toast-container" style="display:none;"></div>
+
+    <!-- DASHBOARD -->
+    <div id="secao-dashboard">
+      <div class="admin-header">
+        <h2>📊 Dashboard</h2>
+      </div>
+      <div class="stats-grid" id="dash-stats"></div>
+      <div class="card">
+        <div class="card-body">
+          <h4 style="font-weight:800; margin-bottom:1rem;">📦 Últimos Pedidos</h4>
+          <div id="dash-pedidos-recentes"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUTOS -->
+    <div id="secao-produtos" style="display:none;">
+      <div class="admin-header">
+        <h2>📦 Produtos</h2>
+        <button class="btn btn-verde" onclick="abrirModalProduto()">➕ Novo Produto</button>
+      </div>
+
+      <div style="display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+        <input type="text" id="busca-admin-prod" placeholder="🔍 Buscar produto..."
+          style="padding:0.6rem 1rem; border:2px solid var(--cinza-200); border-radius:8px; font-family:'Poppins',sans-serif; flex:1; min-width:200px; outline:none;" />
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="tabela" id="tabela-produtos"></table>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div id="secao-usuarios" style="display:none;">
+      <div class="admin-header">
+        <h2>👤 Usuários</h2>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="tabela" id="tabela-usuarios"></table>
+      </div>
+    </div>
+
+    <!-- PEDIDOS -->
+    <div id="secao-pedidos" style="display:none;">
+      <div class="admin-header">
+        <h2>🛍️ Todos os Pedidos</h2>
+      </div>
+      <div id="lista-todos-pedidos"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/header.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Verificação admin
+  const usuario = Auth.get();
+  if (!usuario || !usuario.admin) {
+    window.location.href = 'login.html';
+  }
+
+  // Dados admin via API (cache local para evitar múltiplas chamadas)
+  let _produtos = null;
+  let _usuarios = null;
+  let _pedidos  = null;
+
+  async function getProdutos(force = false) {
+    if (!_produtos || force) _produtos = await Api.get('/admin/produtos');
+    return _produtos;
+  }
+  async function getUsuarios(force = false) {
+    if (!_usuarios || force) _usuarios = await Api.get('/admin/usuarios');
+    return _usuarios;
+  }
+  async function getPedidos(force = false) {
+    if (!_pedidos || force) {
+      // Busca pedidos de todos os usuários via endpoint de cada usuário
+      // Como o backend não tem rota GET /admin/pedidos, buscamos por usuário
+      // Usamos um truque: buscamos /pedidos/0 que retorna vazio, mas
+      // vamos expor um endpoint admin de pedidos.
+      // Por ora, retorna array vazio se não houver rota admin de pedidos.
+      try { _pedidos = await Api.get('/admin/pedidos'); }
+      catch { _pedidos = []; }
+    }
+    return _pedidos;
+  }
+
+  // Seções
+  let secaoAtual = 'dashboard';
+  function setSecao(s) {
+    secaoAtual = s;
+    ['dashboard','produtos','usuarios','pedidos'].forEach(sec => {
+      document.getElementById(`secao-${sec}`).style.display = sec === s ? 'block' : 'none';
+      document.getElementById(`nav-${sec}`).classList.toggle('ativo', sec === s);
+    });
+    if (s === 'dashboard') renderDashboard();
+    if (s === 'produtos') renderProdutos();
+    if (s === 'usuarios') renderUsuarios();
+    if (s === 'pedidos') renderPedidosAdmin();
+  }
+
+  // ===== DASHBOARD =====
+  async function renderDashboard() {
+    const [prods, users, pedidos] = await Promise.all([getProdutos(), getUsuarios(), getPedidos()]);
+    const receita = pedidos.reduce((s, p) => s + (p.total_preco || 0), 0);
+
+    document.getElementById('dash-stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--verde-claro);">📦</div>
+        <div class="stat-valor">${prods.length}</div>
+        <div class="stat-label">Produtos cadastrados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--azul-claro);">👤</div>
+        <div class="stat-valor">${users.length}</div>
+        <div class="stat-label">Usuários cadastrados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef9c3;">🛍️</div>
+        <div class="stat-valor">${pedidos.length}</div>
+        <div class="stat-label">Pedidos totais</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--verde-claro);">💰</div>
+        <div class="stat-valor">${formatarMoeda(receita)}</div>
+        <div class="stat-label">Receita total</div>
+      </div>
+    `;
+
+    const recentes = pedidos.slice(0, 5);
+    document.getElementById('dash-pedidos-recentes').innerHTML = recentes.length ? recentes.map(p => `
+      <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--cinza-100); font-size:0.875rem;">
+        <span><strong>#${String(p.id).slice(-6)}</strong> &nbsp; ${p.data}</span>
+        <span style="color:var(--verde); font-weight:700;">${formatarMoeda(p.total_preco)}</span>
+      </div>
+    `).join('') : '<p style="color:var(--cinza-400); font-size:0.875rem;">Nenhum pedido ainda</p>';
+  }
+
+  // ===== PRODUTOS =====
+  let editandoId = null;
+
+  async function renderProdutos() {
+    const busca = document.getElementById('busca-admin-prod').value.toLowerCase();
+    const todos = await getProdutos();
+    const prods = todos.filter(p => !busca || p.nome.toLowerCase().includes(busca) || p.categoria.toLowerCase().includes(busca));
+
+    document.getElementById('tabela-produtos').innerHTML = `
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Estoque</th>
+          <th>Calorias</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${prods.map(p => `
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <img src="${p.imagem}" width="40" height="40" style="object-fit:cover; border-radius:6px;"
+                  onerror="this.style.display='none'" />
+                <div>
+                  <div style="font-weight:700;">${p.nome}</div>
+                  <div style="font-size:0.75rem; color:var(--cinza-400);">${p.marca}</div>
+                </div>
+              </div>
+            </td>
+            <td>${p.categoria}</td>
+            <td style="font-weight:700; color:var(--verde);">${formatarMoeda(p.preco)}</td>
+            <td><span class="badge ${p.estoque > 10 ? 'badge-verde' : 'badge-vermelho'}">${p.estoque}</span></td>
+            <td>${p.calorias} kcal</td>
+            <td><span class="badge ${p.saudavel ? 'badge-verde' : 'badge-cinza'}">${p.saudavel ? '<img src="img/logo.png" alt="" style="height:13px;vertical-align:middle;margin-right:3px;"/>Saudável' : 'Padrão'}</span></td>
+            <td>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="btn btn-azul btn-sm" onclick="editarProduto(${p.id})">✏️</button>
+                <button class="btn btn-vermelho btn-sm" onclick="deletarProduto(${p.id})">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+  }
+
+  document.getElementById('busca-admin-prod').addEventListener('input', renderProdutos);
+
+  async function abrirModalProduto(id = null) {
+    editandoId = id;
+    const modal = document.getElementById('modal-produto');
+    document.getElementById('modal-titulo').textContent = id ? '✏️ Editar Produto' : '➕ Novo Produto';
+    document.getElementById('erro-produto').style.display = 'none';
+
+    if (id) {
+      const lista = await getProdutos();
+      const p = lista.find(p => p.id === id);
+      if (p) {
+        document.getElementById('p-nome').value = p.nome;
+        document.getElementById('p-marca').value = p.marca;
+        document.getElementById('p-preco').value = p.preco;
+        document.getElementById('p-estoque').value = p.estoque;
+        document.getElementById('p-categoria').value = p.categoria;
+        document.getElementById('p-imagem').value = p.imagem;
+        document.getElementById('p-saudavel').checked = p.saudavel;
+        document.getElementById('p-cal').value = p.calorias;
+        document.getElementById('p-prot').value = p.proteina;
+        document.getElementById('p-carb').value = p.carboidratos;
+        document.getElementById('p-gord').value = p.gordura;
+      }
+    } else {
+      ['p-nome','p-marca','p-preco','p-estoque','p-categoria','p-imagem','p-cal','p-prot','p-carb','p-gord'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('p-saudavel').checked = false;
+    }
+
+    modal.classList.add('aberto');
+  }
+
+  function fecharModalProduto() {
+    document.getElementById('modal-produto').classList.remove('aberto');
+    editandoId = null;
+  }
+
+  document.getElementById('fechar-modal-produto').addEventListener('click', fecharModalProduto);
+
+  document.getElementById('btn-salvar-produto').addEventListener('click', async () => {
+    const nome  = document.getElementById('p-nome').value.trim();
+    const marca = document.getElementById('p-marca').value.trim();
+    const preco = Number(document.getElementById('p-preco').value);
+    const estoque = Number(document.getElementById('p-estoque').value);
+    const categoria = document.getElementById('p-categoria').value;
+    const erroDiv = document.getElementById('erro-produto');
+
+    if (!nome || !marca || !preco || !categoria) {
+      erroDiv.style.display = 'flex';
+      erroDiv.textContent = '❌ Preencha todos os campos obrigatórios';
+      return;
+    }
+
+    erroDiv.style.display = 'none';
+
+    const dados = {
+      nome, marca, preco, estoque, categoria,
+      imagem: document.getElementById('p-imagem').value || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80',
+      saudavel: document.getElementById('p-saudavel').checked,
+      calorias: Number(document.getElementById('p-cal').value) || 0,
+      proteina: Number(document.getElementById('p-prot').value) || 0,
+      carboidratos: Number(document.getElementById('p-carb').value) || 0,
+      gordura: Number(document.getElementById('p-gord').value) || 0,
+      ativo: true
+    };
+
+    try {
+      if (editandoId) {
+        await Api.put(`/admin/produtos/${editandoId}`, dados);
+        mostrarToast('✅ Produto atualizado!', 'verde');
+      } else {
+        await Api.post('/admin/produtos', dados);
+        mostrarToast('✅ Produto cadastrado!', 'verde');
+      }
+      _produtos = null; // invalida cache
+      fecharModalProduto();
+      renderProdutos();
+    } catch (e) {
+      erroDiv.style.display = 'flex';
+      erroDiv.textContent = '❌ Erro ao salvar produto.';
+    }
+  });
+
+  function editarProduto(id) { abrirModalProduto(id); }
+
+  async function deletarProduto(id) {
+    if (!confirm('Tem certeza que deseja remover este produto?')) return;
+    try {
+      await Api.del(`/admin/produtos/${id}`);
+      _produtos = null;
+      renderProdutos();
+      mostrarToast('🗑️ Produto removido', '');
+    } catch (e) {
+      mostrarToast('❌ Erro ao remover produto.', 'vermelho');
+    }
+  }
+
+  // ===== USUÁRIOS =====
+  async function renderUsuarios() {
+    const lista = await getUsuarios();
+    document.getElementById('tabela-usuarios').innerHTML = `
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th>Tipo</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lista.map(u => `
+          <tr>
+            <td><strong>${u.nome}</strong></td>
+            <td>${u.email}</td>
+            <td><span class="badge ${u.status === 'ativo' ? 'badge-verde' : 'badge-vermelho'}">${u.status === 'ativo' ? '✅ Ativo' : '❌ Inativo'}</span></td>
+            <td><span class="badge ${u.admin ? 'badge-azul' : 'badge-cinza'}">${u.admin ? '⚙️ Admin' : '👤 Cliente'}</span></td>
+            <td>
+              ${!u.admin ? `
+                <button class="btn btn-sm ${u.status === 'ativo' ? 'btn-vermelho' : 'btn-verde'}"
+                  onclick="toggleUsuario(${u.id}, '${u.status}')">
+                  ${u.status === 'ativo' ? '❌ Desativar' : '✅ Ativar'}
+                </button>
+              ` : '<span style="color:var(--cinza-400); font-size:0.8rem;">—</span>'}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+  }
+
+  async function toggleUsuario(id, statusAtual) {
+    const novoStatus = statusAtual === 'ativo' ? 'inativo' : 'ativo';
+    try {
+      await Api.put(`/admin/usuarios/${id}`, { status: novoStatus });
+      _usuarios = null;
+      renderUsuarios();
+      mostrarToast('✅ Usuário atualizado!', 'verde');
+    } catch (e) {
+      mostrarToast('❌ Erro ao atualizar usuário.', 'vermelho');
+    }
+  }
+
+  // ===== PEDIDOS ADMIN =====
+  async function renderPedidosAdmin() {
+    const pedidos = await getPedidos();
+    const div = document.getElementById('lista-todos-pedidos');
+
+    if (!pedidos.length) {
+      div.innerHTML = '<div class="estado-vazio"><div class="emoji">📦</div><h3>Nenhum pedido registrado</h3></div>';
+      return;
+    }
+
+    div.innerHTML = `<div style="overflow-x:auto;"><table class="tabela">
+      <thead><tr>
+        <th>Pedido</th><th>Data</th><th>Usuário ID</th><th>Total</th><th>Entrega</th><th>Pagamento</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${pedidos.map(p => `
+          <tr>
+            <td><strong>#${String(p.id).slice(-6)}</strong></td>
+            <td>${p.data}</td>
+            <td>${p.usuario_id}</td>
+            <td style="color:var(--verde); font-weight:700;">${formatarMoeda(p.total_preco)}</td>
+            <td>${p.entrega === 'domicilio' ? '🏠 Domicílio' : '🏪 Retirada'}</td>
+            <td>${{ credito: '💳', debito: '🏦', pix: '📱' }[p.pagamento] || ''} ${p.pagamento}</td>
+            <td><span class="badge badge-verde">✅ ${p.status}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  }
+
+  // Init
+  renderDashboard();
+</script>
+
+<style>
+  body { background: var(--cinza-50); }
+  .admin-layout { min-height: 100vh; }
+  @media (max-width: 1024px) {
+    .admin-layout { display: block; }
+    .admin-sidebar { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; background: var(--cinza-900); }
+    .admin-nav-link { width: auto; }
+    .admin-sidebar h3 { display: none; }
+  }
+  .badge-azul { background: var(--azul-claro); color: var(--azul); }
+</style>
+</body>
+</html>
