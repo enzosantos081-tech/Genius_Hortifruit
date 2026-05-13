@@ -1,1 +1,5 @@
+[phases.setup]
+nixPkgs = ["python311"]
 
+[start]
+cmd = "pip install -r backend/requirements.txt && python3 backend/app.py"
