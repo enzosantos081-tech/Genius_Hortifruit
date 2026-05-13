@@ -1,0 +1,86 @@
+[
+    {
+        "id": 1,
+        "usuario_id": 1,
+        "data": "2026-04-12",
+        "itens": [
+            {
+                "produto_id": 1,
+                "nome": "Frango Grelhado",
+                "quantidade": 2,
+                "preco_unit": 25.9
+            }
+        ],
+        "total_preco": 51.8,
+        "total_calorias": 330,
+        "total_proteina": 62,
+        "total_carboidratos": 0,
+        "total_gordura": 7.2,
+        "entrega": "retirada",
+        "pagamento": "pix",
+        "endereco": "Rua das Flores, 10 – Centro, Indaiatuba",
+        "status": "confirmado"
+    },
+    {
+        "id": 2,
+        "usuario_id": 100,
+        "data": "2026-04-13",
+        "itens": [
+            {
+                "produto_id": 12,
+                "nome": "Whey Protein Baunilha",
+                "quantidade": 1,
+                "preco_unit": 89.9
+            },
+            {
+                "produto_id": 11,
+                "nome": "Pepino Japonês",
+                "quantidade": 3,
+                "preco_unit": 4.5
+            },
+            {
+                "produto_id": 8,
+                "nome": "Banana Prata",
+                "quantidade": 3,
+                "preco_unit": 5.9
+            },
+            {
+                "produto_id": 3,
+                "nome": "Iogurte Grego Natural",
+                "quantidade": 1,
+                "preco_unit": 12.9
+            }
+        ],
+        "total_preco": 134,
+        "total_calorias": 494,
+        "total_proteina": 40.1,
+        "total_carboidratos": 88,
+        "total_gordura": 3.5999999999999996,
+        "entrega": "domicilio",
+        "pagamento": "credito",
+        "endereco": "Rua das Lendas do LOL, 26 – Aura, Indaiatuba",
+        "status": "confirmado"
+    },
+    {
+        "id": 3,
+        "usuario_id": 99,
+        "data": "2026-04-28",
+        "itens": [
+            {
+                "produto_id": 1,
+                "nome": "Frango Grelhado",
+                "quantidade": 1,
+                "preco_unit": 25.9
+            }
+        ],
+        "total_preco": 25.9,
+        "total_calorias": 165,
+        "total_proteina": 31,
+        "total_carboidratos": 0,
+        "total_gordura": 3.6,
+        "entrega": "retirada",
+        "pagamento": "credito",
+        "endereco": "Av. Central, 1 – Centro, Indaiatuba",
+        "status": "confirmado"
+    }
+]
